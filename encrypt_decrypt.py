@@ -11,10 +11,10 @@ def encrypt(private_key, text):
 
 # decrypt pdf
 def decrypt(public_key, signature, text):
-    vk     = ecdsa.VerifyingKey.from_pem(bytes.fromhex(public_key))
     try:
+        vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key), curve=ecdsa.NIST521p, hashfunc=blake2b)
         return vk.verify(bytes.fromhex(signature), text.encode('utf-8'), blake2b)
-    except ecdsa.BadSignatureError:
+    except:
         return False
 
 # read private_key
@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
         sk = ecdsa.SigningKey.generate(curve=ecdsa.NIST521p, hashfunc=blake2b)
         private_key = sk.to_string().hex()
-        public_key  = sk.verifying_key.to_pem().hex()
+        public_key  = sk.verifying_key.to_string().hex()
         signature   = encrypt(private_key, text_stream)
 
         if check(text_stream):
