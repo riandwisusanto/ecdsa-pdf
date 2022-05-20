@@ -1,3 +1,4 @@
+import time
 import ecdsa
 import PyPDF2 as pdf
 from hashlib import blake2b
@@ -50,23 +51,26 @@ if __name__ == '__main__':
     print("1. Sign PDF")
     print("2. Verify PDF")
 
-    inp = input("masukkan pilihan :  ")
+    inp = input("masukkan pilihan       : ")
     if inp == '1':
-        input_pdf    = input("masukkan nama file PDF:  ")
+        input_pdf    = input("masukkan nama file PDF : ")
         input_stream = pdf.PdfFileReader(open("pdf/"+ input_pdf + ".pdf", "rb"))
         text_stream  = input_stream.getPage(0).extractText()
 
         sk = ecdsa.SigningKey.generate(curve=ecdsa.NIST521p, hashfunc=blake2b)
         private_key = sk.to_string().hex()
         public_key  = sk.verifying_key.to_string().hex()
+        sign_time = time.time()
         signature   = encrypt(private_key, text_stream)
 
         if check(text_stream):
             print("PDF sudah di tanda tangani")
         else:
-            print("private key : ", private_key)
-            print("public  key : ", public_key)
-            print("signature   : ", signature)
+            print("private key            :", private_key)
+            print("public  key            :", public_key)
+            print("signature              :", signature)
+            
+            print("waktu proses sign      : %s second" % (time.time() - sign_time))
 
             rl = readFile()
             rl.append(private_key+"_"+signature)
@@ -76,13 +80,15 @@ if __name__ == '__main__':
                     f.write(line)
                     f.write("\n")
     else:
-        input_pdf    = input("masukkan nama file PDF:  ")
+        input_pdf    = input("masukkan nama file PDF : ")
         input_stream = pdf.PdfFileReader(open("pdf/"+ input_pdf + ".pdf", "rb"))
         text_stream  = input_stream.getPage(0).extractText()
 
-        input_sig    = input("masukkan signature  :  ")
+        input_sig    = input("masukkan signature     : ")
         signature    = input_sig
-        input_pub    = input("masukkan public key :  ")
+        input_pub    = input("masukkan public key    : ")
 
-        print("signature   : ", decrypt(input_pub, signature, text_stream))
+        verify_time  = time.time()
+        print("signature              :", decrypt(input_pub, signature, text_stream))
+        print("waktu proses verify    : %s second" % (time.time() - verify_time))
 
