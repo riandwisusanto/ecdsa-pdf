@@ -42,10 +42,10 @@ def check(text):
     isSign = False
 
     for sig in readFile():
-        if '_' in sig:
-            split = sig.split('_')
-            priv = split[0]
-            sig = split[1]
+        if ' _ ' in sig:
+            split = sig.split(' _ ')
+            priv = split[2]
+            sig = split[0]
 
             vk = ecdsa.SigningKey.from_string(bytes.fromhex(priv), curve=ecdsa.NIST521p, hashfunc=hashlib.blake2b).verifying_key
             vk.precompute()
@@ -60,7 +60,7 @@ def check(text):
 
 
 # save sign pdf
-def saveSign(input_text):
+def saveSign(input_text, signature):
     input_file  = "pdf/" + input_text + ".pdf"
     output_file = "pdf-sign/" + input_text + "_sign.pdf"
     output_temp = "pdf-temp/" + input_text + "_temp.pdf"
@@ -76,6 +76,9 @@ def saveSign(input_text):
     now = datetime.now()
     dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
 
+    chunks, chunk_size = len(signature), len(signature)//3
+    out_chunks = [ signature[i:i+chunk_size] for i in range(0, chunks, chunk_size) ]
+
     for page_num, page in enumerate(pages, start=1):
         # Add page
         canvas_file.setPageSize((page.BBox[2], page.BBox[3]))
@@ -89,11 +92,19 @@ def saveSign(input_text):
         x = 160
         canvas_file.saveState()
         canvas_file.setFont('Times-Roman', 8)
-        canvas_file.drawString(page.BBox[2] - x, 20, footer_text)
+        canvas_file.drawString(page.BBox[2] - x, 25, footer_text)
+        canvas_file.setFont('Times-Roman', 6)
+        canvas_file.drawString(page.BBox[2] - (x + 100), 15, out_chunks[0])
+        canvas_file.drawString(page.BBox[2] - (x + 100), 10, out_chunks[1])
+        canvas_file.drawString(page.BBox[2] - (x + 100), 5, out_chunks[2])
         canvas_file.restoreState()
         canvas_temp.saveState()
         canvas_temp.setFont('Times-Roman', 8)
-        canvas_temp.drawString(page.BBox[2] - x, 20, footer_text)
+        canvas_temp.drawString(page.BBox[2] - x, 25, footer_text)
+        canvas_file.setFont('Times-Roman', 6)
+        canvas_temp.drawString(page.BBox[2] - (x + 100), 15, out_chunks[0])
+        canvas_temp.drawString(page.BBox[2] - (x + 100), 10, out_chunks[1])
+        canvas_temp.drawString(page.BBox[2] - (x + 100), 5, out_chunks[2])
         canvas_temp.restoreState()
 
 
@@ -147,13 +158,13 @@ if __name__ == '__main__':
             print("Signature              :", signature)
 
             rl = readFile()
-            rl.append(private_key + "_" + signature)
+            rl.append(signature + " _ " + public_key + " _ " + private_key)
             with open('signature.txt', 'w') as f:
                 for line in rl:
                     f.write(line)
                     f.write("\n")
 
-            saveSign(input_pdf)
+            saveSign(input_pdf, signature)
 
             print("Waktu proses sign      : %s second" % (time.time() - sign_time))
     else:
